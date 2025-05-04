@@ -54,9 +54,9 @@ Si deseas ingresar los servidores manualmente o desde un archivo
 Puedes crear un archivo de texto con los servidores, uno por línea:
 
 
-192.168.10.100,formacion01,1234
+192.168.10.100,formacion01,12345678.formacion
 
-192.168.10.101,formacion02,1234
+192.168.10.101,formacion02,12345678.formacion
 
 192.168.10.102,formacion03,1234
 
