@@ -58,9 +58,9 @@ Puedes crear un archivo de texto con los servidores, uno por línea:
 
 192.168.10.101,formacion02,12345678.formacion
 
-192.168.10.102,formacion03,1234
+192.168.10.102,formacion03,12345678.formacion
 
 **El script, se creo como medida experimental, si crees que necesita mejoras, abre un pull request.**
 
-Autor
-Script desarrollado por Jaime Galvez Martinez para automatizar el despliegue de archivos en entornos mixtos Linux-Windows.
+
+**Script desarrollado por Jaime Galvez Martinez para automatizar el despliegue de archivos en entornos mixtos Linux-Windows.**
