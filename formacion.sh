@@ -1,28 +1,60 @@
 #!/bin/bash
 
-# Preguntar al usuario si no se pasan argumentos
-read -p "IP del servidor Windows: " WINDOWS_IP
-read -p "Usuario de Windows: " WINDOWS_USER
-read -s -p "Contraseña de Windows (opcional, se usará SSH key si no se ingresa): " WINDOWS_PASS
-echo
-read -p "Ruta al archivo local (Linux): " ARCHIVO_LOCAL
-read -p "Ruta de destino en Windows (ej: C:/Users/Usuario/Escritorio): " RUTA_WINDOWS
-
-# Convertir ruta de Windows a ruta SSH válida
-RUTA_WINDOWS_UNIX=$(echo "$RUTA_WINDOWS" | sed 's#\\#/#g' | sed 's#C:/#/c/gi')
-
-# Enviar el archivo usando sshpass + scp si se proporciona contraseña
-if [ -n "$WINDOWS_PASS" ]; then
-    # Verifica que sshpass esté instalado
-    if ! command -v sshpass &> /dev/null; then
-        echo "sshpass no está instalado. Instalando..."
-        sudo apt install sshpass -y
-    fi
-
-    sshpass -p "$WINDOWS_PASS" scp "$ARCHIVO_LOCAL" "${WINDOWS_USER}@${WINDOWS_IP}:/$(echo $RUTA_WINDOWS_UNIX)"
-else
-    # Usar SSH Key por defecto
-    scp "$ARCHIVO_LOCAL" "${WINDOWS_USER}@${WINDOWS_IP}:/$(echo $RUTA_WINDOWS_UNIX)"
+# Validar archivo
+read -p "Ruta al archivo local (Linux)(ej. /home/archivo.txt): " ARCHIVO_LOCAL
+if [ ! -f "$ARCHIVO_LOCAL" ]; then
+    echo "El archivo '$ARCHIVO_LOCAL' no existe."
+    exit 1
 fi
 
-echo "✅ Archivo enviado."
+# Pedir ruta remota
+read -p "Ruta remota de destino en Windows (ej: C:/Users/Usuario/Desktop): " RUTA_WINDOWS
+RUTA_WINDOWS_UNIX=$(echo "$RUTA_WINDOWS" | sed 's#\\#/#g' | sed 's#C:/#/c/#i')
+
+# Pedir archivo de configuración o ingresar servidores a mano
+read -p "¿Quieres leer los servidores desde un archivo? (s/n): " USAR_ARCHIVO
+
+if [[ "$USAR_ARCHIVO" == "s" || "$USAR_ARCHIVO" == "S" ]]; then
+    read -p "Ruta del archivo (formato: ip,usuario[,contraseña]): " ARCHIVO_SERVIDORES
+    if [ ! -f "$ARCHIVO_SERVIDORES" ]; then
+        echo "❌ El archivo '$ARCHIVO_SERVIDORES' no existe."
+        exit 1
+    fi
+    SERVIDORES=($(cat "$ARCHIVO_SERVIDORES"))
+else
+    echo "Introduce los servidores manualmente. Formato: ip, usuario, contraseña"
+    echo "Ejemplo: 192.168.1.100,formacion,1234, donde el formato sería ip, usuario, contraseña"
+    echo "Cuando termines, deja la línea vacía y presiona Enter."
+    SERVIDORES=()
+    while true; do
+        read -p "> " entrada
+        [[ -z "$entrada" ]] && break
+        SERVIDORES+=("$entrada")
+    done
+fi
+
+# Comprobar sshpass
+if ! command -v sshpass &> /dev/null; then
+    echo "Instalando sshpass..."
+    sudo apt install sshpass -y
+fi
+
+# Iterar sobre servidores
+# La iteración envia el archivo a múltiples servidores Windows, uno por uno.
+for entry in "${SERVIDORES[@]}"; do
+    IFS=',' read -r IP USUARIO PASS <<< "$entry"
+
+    echo "Enviando a $USUARIO@$IP..."
+
+    if [ -n "$PASS" ]; then
+        sshpass -p "$PASS" scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:/$(echo $RUTA_WINDOWS_UNIX)"
+    else
+        scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:/$(echo $RUTA_WINDOWS_UNIX)"
+    fi
+
+    if [ $? -eq 0 ]; then
+        echo "$(date) Archivo enviado a $IP"  
+    else
+        echo "$(date) Error al enviar a $IP"
+    fi
+done
