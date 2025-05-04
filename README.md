@@ -19,7 +19,8 @@ Script creado para un proyecto de trabajo, en el cual, tenemos que enviar un arc
 - Interfaz interactiva para ingresar datos
 - Soporte para lista de equipos desde archivo o entrada manual
 - Compatibilidad con contraseña o clave SSH
-- Registro de éxito o fallo en un archivo de log
+- Si hay contraseña ($PASS): usa sshpass para pasarla automáticamente al comando scp, lo que permite autenticación sin intervención del usuario.
+- Si no hay contraseña: simplemente llama a scp esperando que se use una clave SSH o que el usuario introduzca la contraseña manualmente.
 - Verificación automática del archivo y dependencias
 
 ---
