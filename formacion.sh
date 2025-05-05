@@ -27,7 +27,7 @@ if [[ "$USAR_ARCHIVO" == "s" || "$USAR_ARCHIVO" == "S" ]]; then
     SERVIDORES=($(cat "$ARCHIVO_SERVIDORES"))
 else
     echo "Introduce los servidores manualmente. Formato: ip, usuario, contraseña"
-    echo "Ejemplo: 192.168.1.100,formacion,1234, donde el formato sería ip, usuario, contraseña"
+    echo "Ejemplo: 192.168.0.201,Administracion,Password, donde el formato sería ip, usuario, contraseña"
     echo "Cuando termines, deja la línea vacía y presiona Enter."
     SERVIDORES=()
     while true; do
