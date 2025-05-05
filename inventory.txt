@@ -1,6 +1,8 @@
-192.168.10.100,formacion01,12345678.formacion
-192.168.10.101,formacion02,12345678.formacion
-192.168.10.102,formacion03,12345678.formacion
-192.168.10.103,formacion04,12345678.formacion
-  
+192.168.0.201,Administrador,2I8RHnup
+192.168.0.202,Administrador,2I8RHnup
+192.168.0.203,Administrador,2I8RHnup
+192.168.0.204,Administrador,2I8RHnup
+192.168.0.205,Administrador,2I8RHnup
+192.168.0.206,Administrador,2I8RHnup
+
 
