@@ -1,5 +1,8 @@
 #!/bin/bash
 
+usuario_actual=$(whoami)
+
+
 # Validar archivo
 read -p "Ruta al archivo local (Linux)(ej. /home/archivo.txt): " ARCHIVO_LOCAL
 if [ ! -f "$ARCHIVO_LOCAL" ]; then
@@ -16,7 +19,7 @@ RUTA_WINDOWS_UNIX=$(echo "$RUTA_WINDOWS" | sed 's#\\#/#g')  # solo reemplaza bac
 read -p "¿Quieres leer los servidores desde un archivo? (s/n): " USAR_ARCHIVO
 
 if [[ "$USAR_ARCHIVO" == "s" || "$USAR_ARCHIVO" == "S" ]]; then
-    read -p "Ruta del archivo (eje): " ARCHIVO_SERVIDORES
+    read -p "Ruta del archivo (Suele estar en /home/$usuario_actual/formacion/inventory.txt): " ARCHIVO_SERVIDORES
     if [ ! -f "$ARCHIVO_SERVIDORES" ]; then
         echo "❌ El archivo '$ARCHIVO_SERVIDORES' no existe."
         exit 1
@@ -53,8 +56,6 @@ else
     scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:$RUTA_WINDOWS_UNIX"
 fi
 
-   
-    fi
 
     if [ $? -eq 0 ]; then
         echo "$(date) Archivo enviado a $IP"  
