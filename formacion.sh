@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 echo "----------------------------------------------------------------------------------------"                                                                    
@@ -5,19 +6,18 @@ echo "            >> Transferencia de archivos a Clientes Windows mediante SSH <
 echo "----------------------------------------------------------------------------------------"
                      
 usuario_actual=$(whoami)
-
+LOG_FILE="/home/$usuario_actual/transferencias.log"
 
 # Validar archivo
 read -p "Ruta al archivo local (Linux)(ej. /home/archivo.txt): " ARCHIVO_LOCAL
 if [ ! -f "$ARCHIVO_LOCAL" ]; then
-    echo "El archivo '$ARCHIVO_LOCAL' no existe."
+    echo "❌ El archivo '$ARCHIVO_LOCAL' no existe."
     exit 1
 fi
 
 # Pedir ruta remota
 read -p "Ruta remota de destino en Windows (ej: C:/Users/Usuario/Desktop): " RUTA_WINDOWS
-RUTA_WINDOWS_UNIX=$(echo "$RUTA_WINDOWS" | sed 's#\\#/#g')  # solo reemplaza backslashes por slashes
-
+RUTA_WINDOWS_UNIX=$(echo "$RUTA_WINDOWS" | sed 's#\\#/#g')  # Reemplaza backslashes por slashes
 
 # Pedir archivo de configuración o ingresar servidores a mano
 read -p "¿Quieres leer los servidores desde un archivo? (s/n): " USAR_ARCHIVO
@@ -31,7 +31,7 @@ if [[ "$USAR_ARCHIVO" == "s" || "$USAR_ARCHIVO" == "S" ]]; then
     SERVIDORES=($(cat "$ARCHIVO_SERVIDORES"))
 else
     echo "Introduce los servidores manualmente. Formato: ip, usuario, contraseña"
-    echo "Ejemplo: 192.168.0.201,Administracion,Password, donde el formato sería ip, usuario, contraseña"
+    echo "Ejemplo: 192.168.0.201,Administracion,Password"
     echo "Cuando termines, deja la línea vacía y presiona Enter."
     SERVIDORES=()
     while true; do
@@ -47,63 +47,50 @@ if ! command -v sshpass &> /dev/null; then
     sudo apt install sshpass -y
 fi
 
+# Contadores
+exitos=0
+fallos=0
+
 # Iterar sobre servidores
-# La iteración envia el archivo a múltiples servidores Windows, uno por uno.
 for entry in "${SERVIDORES[@]}"; do
     IFS=',' read -r IP USUARIO PASS <<< "$entry"
 
-    echo "Enviando a $USUARIO@$IP..."
+    echo "--------------------------------------------------------"
+    echo "⏳ Conectando a $USUARIO@$IP..."
 
-if [ -n "$PASS" ]; then
-    sshpass -p "$PASS" scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:$RUTA_WINDOWS_UNIX"
-else
-    scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:$RUTA_WINDOWS_UNIX"
-fi
-
-
-    if [ $? -eq 0 ]; then
-        echo "$(date) Archivo enviado a $IP"  
+    # Verificar conexión SSH
+    sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$USUARIO@$IP" "exit" 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo "❌ No se pudo establecer conexión con $IP"
+        estado="❌ Error de conexión"
+        fallos=$((fallos + 1))
     else
-        echo "$(date) Error al enviar a $IP"
+        echo "🔐 Conexión establecida. Enviando archivo..."
+
+        if [ -n "$PASS" ]; then
+            sshpass -p "$PASS" scp -o StrictHostKeyChecking=no "$ARCHIVO_LOCAL" "$USUARIO@$IP:$RUTA_WINDOWS_UNIX"
+        else
+            scp -o StrictHostKeyChecking=no "$ARCHIVO_LOCAL" "$USUARIO@$IP:$RUTA_WINDOWS_UNIX"
+        fi
+
+        if [ $? -eq 0 ]; then
+            echo "✅ Archivo enviado correctamente a $IP"
+            estado="✅ Enviado"
+            exitos=$((exitos + 1))
+        else
+            echo "❌ Error al enviar a $IP"
+            estado="❌ Fallo en envío"
+            fallos=$((fallos + 1))
+        fi
     fi
+
+    # Registrar en log
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | IP: $IP | Usuario: $USUARIO | Archivo: $(basename "$ARCHIVO_LOCAL") | Estado: $estado" >> "$LOG_FILE"
 done
 
-
-# Menú de administración post-envío
-    while true; do
-        echo ""
-        echo "¿Acción adicional para $IP?"
-        echo "1) Reiniciar equipo remoto"
-        echo "2) Ejecutar script remoto"
-        echo "3) Ninguna (continuar)"
-        read -p "Opción [1-3]: " OPC
-
-        case "$OPC" in
-            1)
-                echo "Reiniciando $IP..."
-                sshpass -p "$PASS" ssh "$USUARIO@$IP" "shutdown /r /t 0"
-                echo "$(date) -> $IP | Reinicio solicitado" >> "$LOG_FILE"
-                break
-                ;;
-            2)
-                read -p "Ruta local del script a ejecutar (ej: /home/script.bat): " SCRIPT_LOCAL
-                read -p "Ruta destino en Windows (ej: C:/Users/Usuario/Desktop/script.bat): " SCRIPT_REMOTO
-                SCRIPT_REMOTO_UNIX=$(echo "$SCRIPT_REMOTO" | sed 's#\\#/#g')
-
-                sshpass -p "$PASS" scp "$SCRIPT_LOCAL" "$USUARIO@$IP:$SCRIPT_REMOTO_UNIX"
-                sshpass -p "$PASS" ssh "$USUARIO@$IP" "$SCRIPT_REMOTO_UNIX"
-                echo "$(date) -> $IP | Script ejecutado: $SCRIPT_REMOTO" >> "$LOG_FILE"
-                break
-                ;;
-            3)
-                break
-                ;;
-            *)
-                echo "Opción inválida. Intenta de nuevo."
-                ;;
-        esac
-    done
-done
-
-echo ""
-echo "✔️  Tarea completada. Revisa el log en: $LOG_FILE"
+# Resumen final
+echo "--------------------------------------------------------"
+echo "📋 Resumen:"
+echo "✅ Exitosos: $exitos"
+echo "❌ Fallidos: $fallos"
+echo "📁 Log guardado en: $LOG_FILE"
