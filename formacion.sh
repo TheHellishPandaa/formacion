@@ -61,11 +61,11 @@ for entry in "${SERVIDORES[@]}"; do
     # Verificar conexión SSH
     sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$USUARIO@$IP" "exit" 2>/dev/null
     if [ $? -ne 0 ]; then
-        echo "❌ No se pudo establecer conexión con $IP"
-        estado="❌ Error de conexión"
+        echo "⚠️ ❌ No se pudo establecer conexión con $IP"
+        estado="⚠️ ❌ Error de conexión"
         fallos=$((fallos + 1))
     else
-        echo "🔐 Conexión establecida. Enviando archivo..."
+        echo "📤 🔐 Conexión establecida. Enviando archivo..."
 
         if [ -n "$PASS" ]; then
             sshpass -p "$PASS" scp -o StrictHostKeyChecking=no "$ARCHIVO_LOCAL" "$USUARIO@$IP:$RUTA_WINDOWS_UNIX"
@@ -74,12 +74,12 @@ for entry in "${SERVIDORES[@]}"; do
         fi
 
         if [ $? -eq 0 ]; then
-            echo "✅ Archivo enviado correctamente a $IP"
-            estado="✅ Enviado"
+            echo "📥 ✅ Archivo enviado correctamente a $IP"
+            estado="📥 ✅ Enviado"
             exitos=$((exitos + 1))
         else
-            echo "❌ Error al enviar a $IP"
-            estado="❌ Fallo en envío"
+            echo "⚠️ ❌ Error al enviar a $IP"
+            estado="⚠️ ❌ Fallo en envío"
             fallos=$((fallos + 1))
         fi
     fi
