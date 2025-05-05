@@ -9,13 +9,14 @@ fi
 
 # Pedir ruta remota
 read -p "Ruta remota de destino en Windows (ej: C:/Users/Usuario/Desktop): " RUTA_WINDOWS
-RUTA_WINDOWS_UNIX=$(echo "$RUTA_WINDOWS" | sed 's#\\#/#g' | sed 's#C:/#/c/#i')
+RUTA_WINDOWS_UNIX=$(echo "$RUTA_WINDOWS" | sed 's#\\#/#g')  # solo reemplaza backslashes por slashes
+
 
 # Pedir archivo de configuración o ingresar servidores a mano
 read -p "¿Quieres leer los servidores desde un archivo? (s/n): " USAR_ARCHIVO
 
 if [[ "$USAR_ARCHIVO" == "s" || "$USAR_ARCHIVO" == "S" ]]; then
-    read -p "Ruta del archivo (formato: ip,usuario[,contraseña]): " ARCHIVO_SERVIDORES
+    read -p "Ruta del archivo (eje): " ARCHIVO_SERVIDORES
     if [ ! -f "$ARCHIVO_SERVIDORES" ]; then
         echo "❌ El archivo '$ARCHIVO_SERVIDORES' no existe."
         exit 1
@@ -46,10 +47,13 @@ for entry in "${SERVIDORES[@]}"; do
 
     echo "Enviando a $USUARIO@$IP..."
 
-    if [ -n "$PASS" ]; then
-        sshpass -p "$PASS" scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:/$(echo $RUTA_WINDOWS_UNIX)"
-    else
-        scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:/$(echo $RUTA_WINDOWS_UNIX)"
+if [ -n "$PASS" ]; then
+    sshpass -p "$PASS" scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:$RUTA_WINDOWS_UNIX"
+else
+    scp "$ARCHIVO_LOCAL" "$USUARIO@$IP:$RUTA_WINDOWS_UNIX"
+fi
+
+   
     fi
 
     if [ $? -eq 0 ]; then
