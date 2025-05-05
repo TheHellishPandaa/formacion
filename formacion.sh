@@ -67,3 +67,43 @@ fi
         echo "$(date) Error al enviar a $IP"
     fi
 done
+
+
+# Menú de administración post-envío
+    while true; do
+        echo ""
+        echo "¿Acción adicional para $IP?"
+        echo "1) Reiniciar equipo remoto"
+        echo "2) Ejecutar script remoto"
+        echo "3) Ninguna (continuar)"
+        read -p "Opción [1-3]: " OPC
+
+        case "$OPC" in
+            1)
+                echo "Reiniciando $IP..."
+                sshpass -p "$PASS" ssh "$USUARIO@$IP" "shutdown /r /t 0"
+                echo "$(date) -> $IP | Reinicio solicitado" >> "$LOG_FILE"
+                break
+                ;;
+            2)
+                read -p "Ruta local del script a ejecutar (ej: /home/script.bat): " SCRIPT_LOCAL
+                read -p "Ruta destino en Windows (ej: C:/Users/Usuario/Desktop/script.bat): " SCRIPT_REMOTO
+                SCRIPT_REMOTO_UNIX=$(echo "$SCRIPT_REMOTO" | sed 's#\\#/#g')
+
+                sshpass -p "$PASS" scp "$SCRIPT_LOCAL" "$USUARIO@$IP:$SCRIPT_REMOTO_UNIX"
+                sshpass -p "$PASS" ssh "$USUARIO@$IP" "$SCRIPT_REMOTO_UNIX"
+                echo "$(date) -> $IP | Script ejecutado: $SCRIPT_REMOTO" >> "$LOG_FILE"
+                break
+                ;;
+            3)
+                break
+                ;;
+            *)
+                echo "Opción inválida. Intenta de nuevo."
+                ;;
+        esac
+    done
+done
+
+echo ""
+echo "✔️  Tarea completada. Revisa el log en: $LOG_FILE"
